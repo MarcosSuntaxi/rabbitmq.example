@@ -21,7 +21,7 @@ El proyecto contiene dos componentes principales:
 ```
 
 - `app/main.py`: Código de la API REST que recibe mensajes y los envía a RabbitMQ.
-- `app/requirements.txt`: Dependencias necesarias para ejecutar la API.
+- `app/requirements.txt`: Dependencias necesarias para ejecutar la API y el consumidor.
 - `consumidor.py`: Script que consume y muestra los mensajes de la cola.
 
 ## Requisitos
@@ -29,6 +29,25 @@ El proyecto contiene dos componentes principales:
 - Python 3.8 o superior
 - RabbitMQ instalado y corriendo en `localhost`
 - Dependencias de Python (ver instrucciones abajo)
+
+## Configuración de la cola en RabbitMQ
+
+Por defecto, el código crea una cola llamada `cola_texto` de tipo **transient** (`durable=False`).  
+Sin embargo, la mayoría de las instalaciones de RabbitMQ usan colas **durables** (`durable=True`) por defecto.  
+Si intentas declarar una cola con el mismo nombre pero diferente configuración de durabilidad, RabbitMQ mostrará un error.
+
+**Solución:**
+
+- Puedes cambiar la configuración de la cola en ambos archivos (`app/main.py` y `consumidor.py`) para que sean coherentes.
+- Si deseas que la cola sea durable (persistente), cambia la línea donde se declara la cola a:
+
+```python
+channel.queue_declare(queue='cola_texto', durable=True)
+```
+
+Asegúrate de usar la misma configuración en ambos archivos.
+
+> **Nota:** Si ya creaste la cola con una configuración y la quieres cambiar, primero elimina la cola desde la interfaz de RabbitMQ o usa otro nombre de cola.
 
 ## Instalación
 
@@ -38,16 +57,22 @@ El proyecto contiene dos componentes principales:
    cd rabbitmq.example
    ```
 
-2. **Instalar dependencias de la API**
+2. **Crear y activar un entorno virtual**  
+   Es recomendable usar un entorno virtual para aislar las dependencias:
    ```bash
-   cd app
-   pip install -r requirements.txt
-   cd ..
+   # En sistemas Unix/macOS
+   python3 -m venv venv
+   source venv/bin/activate
+
+   # En Windows
+   python -m venv venv
+   venv\Scripts\activate
    ```
 
-3. **Instalar dependencias para el consumidor**
+3. **Instalar dependencias**  
+   Todas las dependencias necesarias (incluyendo `pika`) están en `app/requirements.txt`:
    ```bash
-   pip install pika
+   pip install -r app/requirements.txt
    ```
 
 ## Ejecución
@@ -80,7 +105,7 @@ curl -X POST "http://127.0.0.1:8000/enviar" -H "Content-Type: application/json" 
 
 ### 4. Ejecutar el consumidor
 
-En otra terminal:
+En otra terminal (con el entorno virtual activado):
 
 ```bash
 python consumidor.py
@@ -88,11 +113,3 @@ python consumidor.py
 
 Este script recibirá y mostrará los mensajes enviados a la cola.
 
-## Notas
-
-- Puedes modificar el nombre de la cola cambiando el valor de `queue='cola_texto'` tanto en `main.py` como en `consumidor.py`.
-- El ejemplo asume que RabbitMQ está en la misma máquina (`localhost`). Si usas otro host, actualiza los parámetros de conexión en ambos archivos.
-
-## Licencia
-
-MIT
